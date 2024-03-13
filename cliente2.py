@@ -119,6 +119,11 @@ class ChatGUI:
         self.message_history.config(state='normal')
         self.message_history.insert(tk.END, message + '\n')
         self.message_history.config(state='disabled')
+        if self.username:
+            sender, text = message.split(':', 1)
+            if sender == self.username:
+                self.message_history.insert(tk.END, f"Tú: {text}\n")
+                self.message_history.config(state='disabled')
 
     def run(self):
         self.root.mainloop()

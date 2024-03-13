@@ -29,6 +29,7 @@ class ChatHandler(socketserver.BaseRequestHandler):
                 if recipient in clients:
                     # Reenviar el mensaje al destinatario
                     clients[recipient].sendall(f"{username}: {message}".encode('utf-8'))
+                    self.request.sendall(f"Tú: {message}".encode('utf-8'))
                 else:
                     self.request.sendall("El usuario no está conectado.".encode('utf-8'))
             except Exception as e:
