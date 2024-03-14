@@ -7,7 +7,7 @@ class ChatServer(socketserver.ThreadingTCPServer):
 class ChatHandler(socketserver.BaseRequestHandler):
     def handle(self):
         print(f"Conexión establecida desde {self.client_address}")
-        self.request.sendall("Bienvenido al servidor de chat. Ingresa tu nombre: ".encode('utf-8'))
+        self.request.sendall("Bienvenido al servidor de chat.".encode('utf-8'))
         username = self.request.recv(1024).decode('utf-8').strip()
 
         # Almacenar la conexión del cliente junto con su nombre de usuario

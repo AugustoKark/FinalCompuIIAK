@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import messagebox
 import socket
 import threading
+import sys
 
 class ChatGUI:
     def __init__(self):
@@ -26,11 +27,10 @@ class ChatGUI:
         
         self.connect_button = tk.Button(self.root, text="Conectar", command=self.connect_to_server)
         self.connect_button.pack()
+
         
-        # Creamos un OptionMenu vacío por ahora
-        self.user_dropdown = tk.OptionMenu(self.root, tk.StringVar(), ())
-        self.user_dropdown.pack()
         
+       
         self.message_label = tk.Label(self.root, text="Mensaje:")
         self.message_label.pack()
         
@@ -67,9 +67,11 @@ class ChatGUI:
         receive_thread.start()
         
     def create_chat_widgets(self):
+
+        connected_label = tk.Label(self.root, text="Conectados: ")
+        connected_label.pack()
         # Creamos el OptionMenu con la lista de usuarios en línea
         self.user_var = tk.StringVar(self.root)
-        # self.user_dropdown = tk.OptionMenu(self.root, self.user_var, *self.online_users)
         self.user_dropdown = tk.OptionMenu(self.root, self.user_var, ())
         self.user_dropdown.pack()
         
@@ -120,13 +122,22 @@ class ChatGUI:
         self.message_history.insert(tk.END, message + '\n')
         self.message_history.config(state='disabled')
         if self.username:
-            sender, text = message.split(':', 1)
-            if sender == self.username:
-                self.message_history.insert(tk.END, f"Tú: {text}\n")
-                self.message_history.config(state='disabled')
+            if ':' in message:
+                sender, text = message.split(':', 1)
+                if sender == self.username:
+                    self.message_history.insert(tk.END, f"Tú: {text}\n")
+                    self.message_history.config(state='disabled')
+
 
     def run(self):
+        self.root.protocol("WM_DELETE_WINDOW", self.close_window)  # Vincular el método close_window al evento de cerrar la ventana
         self.root.mainloop()
+
+    def close_window(self):
+        if self.client_socket:
+            self.client_socket.close()  # Cerrar el socket antes de salir
+        self.root.destroy()  # Cerrar la ventana principal
+        sys.exit() 
 
 # Ejecutar la aplicación
 if __name__ == "__main__":
