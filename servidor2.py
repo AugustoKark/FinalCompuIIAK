@@ -13,7 +13,7 @@ class ChatHandler(socketserver.BaseRequestHandler):
         # Almacenar la conexión del cliente junto con su nombre de usuario
         clients[username] = self.request
 
-        # Notificar a todos los clientes sobre la nueva conexión
+        
         self.broadcast_users()
 
         while True:
@@ -28,8 +28,10 @@ class ChatHandler(socketserver.BaseRequestHandler):
                 # Verificar si el destinatario está en la lista de clientes
                 if recipient in clients:
                     # Reenviar el mensaje al destinatario
+
                     clients[recipient].sendall(f"{username}: {message}".encode('utf-8'))
-                    self.request.sendall(f"Tú: {message}".encode('utf-8'))
+                    if recipient != username:
+                        self.request.sendall(f"Tú: {message}".encode('utf-8'))
                 else:
                     self.request.sendall("El usuario no está conectado.".encode('utf-8'))
             except Exception as e:
