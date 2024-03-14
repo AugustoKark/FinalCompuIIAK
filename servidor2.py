@@ -1,5 +1,6 @@
 import socketserver
 import threading
+import socket
 
 class ChatServer(socketserver.ThreadingTCPServer):
     allow_reuse_address = True
@@ -51,8 +52,16 @@ class ChatHandler(socketserver.BaseRequestHandler):
             client_socket.sendall(f"USUARIOS:{online_users}".encode('utf-8'))
 
 # Configuración del servidor
-host, port = 'localhost', 9999
-server = ChatServer((host, port), ChatHandler)
+host, port = '::', 9999  # Escucha en todas las interfaces IPv6
+try:
+    # Intentar crear un socket para IPv6
+    server = ChatServer((host, port), ChatHandler)
+except socket.error:
+    # Si falla la creación del socket para IPv6, crear para IPv4
+    host = '0.0.0.0'  # Escucha en todas las interfaces IPv4
+    server = ChatServer((host, port), ChatHandler)
+# host, port = 'localhost', 9999
+# server = ChatServer((host, port), ChatHandler)
 
 # Iniciar el servidor en un hilo separado
 server_thread = threading.Thread(target=server.serve_forever)

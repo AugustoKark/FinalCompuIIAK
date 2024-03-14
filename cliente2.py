@@ -3,15 +3,16 @@ from tkinter import messagebox
 import socket
 import threading
 import sys
+import argparse
 
 class ChatGUI:
-    def __init__(self):
-        self.root = tk.Tk()
+    def __init__(self, root):
+        self.root = root
         self.root.title("Chat")
         
         self.client_socket = None
         self.username = None
-        self.online_users = []  # Inicializamos como una lista vacía
+        self.online_users = []  
         
         self.create_widgets()
 
@@ -27,10 +28,7 @@ class ChatGUI:
         
         self.connect_button = tk.Button(self.root, text="Conectar", command=self.connect_to_server)
         self.connect_button.pack()
-
         
-        
-       
         self.message_label = tk.Label(self.root, text="Mensaje:")
         self.message_label.pack()
         
@@ -41,7 +39,8 @@ class ChatGUI:
         self.send_button.pack()
         
     def connect_to_server(self):
-        username = self.username_entry.get().strip()
+        username = self.username_entry.get().strip() if not self.username else self.username
+        
         if not username:
             messagebox.showwarning("Error", "Por favor, ingresa un nombre de usuario.")
             return
@@ -67,7 +66,6 @@ class ChatGUI:
         receive_thread.start()
         
     def create_chat_widgets(self):
-
         connected_label = tk.Label(self.root, text="Conectados: ")
         connected_label.pack()
         # Creamos el OptionMenu con la lista de usuarios en línea
@@ -112,7 +110,6 @@ class ChatGUI:
                 else:
                     # Procesar el mensaje recibido
                     self.append_to_history(message)
-                    # pass
             except Exception as e:
                 print(f"Error al recibir mensajes: {e}")
                 break
@@ -130,16 +127,27 @@ class ChatGUI:
 
 
     def run(self):
-        self.root.protocol("WM_DELETE_WINDOW", self.close_window)  # Vincular el método close_window al evento de cerrar la ventana
+        self.root.protocol("WM_DELETE_WINDOW", self.close_window)  
         self.root.mainloop()
 
     def close_window(self):
         if self.client_socket:
-            self.client_socket.close()  # Cerrar el socket antes de salir
-        self.root.destroy()  # Cerrar la ventana principal
-        sys.exit() 
+            self.client_socket.close()  
+        self.root.destroy()  
 
-# Ejecutar la aplicación
-if __name__ == "__main__":
-    gui = ChatGUI()
+def main():
+    parser = argparse.ArgumentParser(description="Cliente de chat")
+    parser.add_argument("-n", "--nombre", help="Nombre de usuario")
+    args = parser.parse_args()
+
+    root = tk.Tk()  
+    gui = ChatGUI(root)
+    
+    if args.nombre:
+        gui.username = args.nombre
+        gui.connect_to_server()
+    
     gui.run()
+
+if __name__ == "__main__":
+    main()
