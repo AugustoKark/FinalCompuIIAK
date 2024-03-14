@@ -6,12 +6,12 @@ import sys
 import argparse
 
 class ChatGUI:
-    def __init__(self, root):
+    def __init__(self, root, username=None):
         self.root = root
         self.root.title("Chat")
         
         self.client_socket = None
-        self.username = None
+        self.username = username
         self.online_users = []  
         
         self.create_widgets()
@@ -20,8 +20,10 @@ class ChatGUI:
         self.message_history.pack(expand=True, fill=tk.BOTH)
         
     def create_widgets(self):
+        
         self.username_label = tk.Label(self.root, text="Ingresa tu nombre de usuario:")
         self.username_label.pack()
+        
         
         self.username_entry = tk.Entry(self.root)
         self.username_entry.pack()
@@ -31,7 +33,11 @@ class ChatGUI:
         
         self.message_label = tk.Label(self.root, text="Mensaje:")
         self.message_label.pack()
-        
+
+        if self.username:
+            self.username_display_label = tk.Label(self.root, text=f"Usuario: {self.username}")
+            self.username_display_label.pack()
+            
         self.message_entry = tk.Entry(self.root)
         self.message_entry.pack()
         
@@ -58,6 +64,10 @@ class ChatGUI:
         self.username_label.pack_forget()
         self.username_entry.pack_forget()
         self.connect_button.pack_forget()
+
+          # Mostrar el nombre de usuario
+        self.username_display_label = tk.Label(self.root, text=f"Usuario: {self.username}")
+        self.username_display_label.pack()
         
         self.create_chat_widgets()
         
