@@ -10,7 +10,7 @@ def receive_messages(client_socket):
             break
 
 def main():
-    HOST, PORT = "localhost", 9999
+    HOST, PORT = "localhost", 9989
 
     client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     client_socket.connect((HOST, PORT))
