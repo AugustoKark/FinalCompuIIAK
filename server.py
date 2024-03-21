@@ -1,97 +1,189 @@
+
 import socketserver
+import select
+import socket
 import threading
-import os
 
-class ChatHandler(socketserver.BaseRequestHandler):
-    clients = {}
-    client_states = {}
-    message_files = {}
 
-    def handle(self):
-        self.client_name = None
-        self.current_chat_partner = None
+MAX_CLIENTS = 30
+PORT = 22223
+QUIT_STRING = '<$quit$>'
 
-        while True:
-            self.data = self.request.recv(1024).strip().decode("utf-8")
-            if not self.client_name:
-                if self.data.startswith("Name:"):
-                    self.client_name = self.data.split(":")[1]
-                    with ChatHandler.lock:
-                        ChatHandler.clients[self.client_name] = self.request
-                        ChatHandler.client_states[self.client_name] = None
-                    self.broadcast(f"{self.client_name} has joined the chat.")
-                    self.send_online_users()
-                else:
-                    self.request.sendall(bytes("Please send your name in the format 'Name: your_name'.\n", "utf-8"))
-            else:
-                if self.data == "quit":
-                    self.request.close()
-                    with ChatHandler.lock:
-                        del ChatHandler.clients[self.client_name]
-                        del ChatHandler.client_states[self.client_name]
-                    self.broadcast(f"{self.client_name} has left the chat.")
-                    self.send_online_users()
-                    break
-                elif self.data.startswith("Chat with:"):
-                    partner = self.data.split(":")[1].strip()
-                    if partner in ChatHandler.clients:
-                        self.current_chat_partner = partner
-                        ChatHandler.client_states[self.client_name] = f"Chatting with {partner}"
-                        self.request.sendall(bytes(f"You are now chatting with {partner}\n", "utf-8"))
-                        self.process_message_file()
-                    else:
-                        self.request.sendall(bytes(f"User {partner} is not online.\n", "utf-8"))
-                elif self.data == "End chat":
-                    self.current_chat_partner = None
-                    ChatHandler.client_states[self.client_name] = None
-                    self.request.sendall(bytes("You have ended the current chat\n", "utf-8"))
-                    self.process_message_file()
-                elif ChatHandler.client_states[self.client_name] and self.current_chat_partner:
-                    recipient_name = self.current_chat_partner
-                    message = self.data
-                    self.send_private_message(recipient_name.strip(), message.strip())
-                else:
-                    self.request.sendall(bytes("You are not currently in a chat. Use 'Chat with: username' to start a chat.\n", "utf-8"))
 
-    def broadcast(self, message):
-        with ChatHandler.lock:
-            for client_name, client_socket in ChatHandler.clients.items():
-                if client_name != self.client_name:  # Evita enviar mensajes al cliente actual
-                    client_socket.sendall(bytes(message + "\n", "utf-8"))
+# def create_socket(address):
+#     s = socket.socket(socket.AF_UNSPEC, socket.SOCK_STREAM)
+#     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+#     s.setblocking(0)
+#     s.bind(address)
+#     s.listen(MAX_CLIENTS)
+#     print("Servidor escuchando en ", address) 
+#     return s
 
-    def send_online_users(self):
-        online_users = ", ".join(ChatHandler.clients.keys())
-        with ChatHandler.lock:
-            for client_name, client_socket in ChatHandler.clients.items():
-                client_socket.sendall(bytes(f"Online users: {online_users}\n", "utf-8"))
+class Hall:
+    def __init__(self):
+        self.rooms = {}
+        self.room_player_map = {}
 
-    def send_private_message(self, recipient_name, message):
-        if recipient_name in ChatHandler.clients:
-            recipient_socket = ChatHandler.clients[recipient_name]
-            recipient_socket.sendall(bytes(f"[Private from {self.client_name}]: {message}\n", "utf-8"))
+    def welcome_new(self, new_player):
+        new_player.socket.sendall(b'Bienvenido a la App de Mensajeria.')
+        new_player.socket.sendall(b'Por favor, ingresa tu nombre:')
+
+    def list_rooms(self, player):
+        if len(self.rooms) == 0:
+            msg = 'Lo sentimos pero no hay salas creadas hasta el momento. Crea una!\n' \
+                + 'Usa [<join> room_name] to create a room.\n'
+            player.socket.sendall(msg.encode())
         else:
-            self.store_message(recipient_name, f"[Private from {self.client_name}]: {message}")
+            msg = 'Listando salas actuales...\n'
+            for room in self.rooms:
+                msg += room + ": " + str(len(self.rooms[room].players)) + " jugador(es)\n"
+            player.socket.sendall(msg.encode())
 
-    def store_message(self, recipient_name, message):
-        file_name = f"{recipient_name}_{self.client_name}.txt"
-        with open(file_name, "a") as f:
-            f.write(message + "\n")
+    def handle_msg(self, player, msg):
+        instructions = b'Instrucciones:\n'\
+            + b'[<list>] para listar todas las salas\n'\
+            + b'[<join> room_name] para unirte/crear/cambiar a una sala\n' \
+            + b'[<manual>] para mostrar las instrucciones\n' \
+            + b'[<quit>] para salir\n' \
 
-    def process_message_file(self):
-        if self.current_chat_partner:
-            file_name = f"{self.client_name}_{self.current_chat_partner}.txt"
-            if os.path.exists(file_name):
-                with open(file_name, "r") as f:
-                    messages = f.readlines()
-                for message in messages:
-                    self.request.sendall(bytes(message, "utf-8"))
-                os.remove(file_name)
+            
+        print(player.name + " dice: " + msg)
+        if "name:" in msg:
+            name = msg.split()[1]
+            player.name = name
+            print("Nueva conexion de: ", player.name)
+            player.socket.sendall(instructions)
+
+        elif "<join>" in msg:
+            same_room = False
+            if len(msg.split()) >= 2:
+                room_name = msg.split()[1]
+                if player.name in self.room_player_map:
+                    if self.room_player_map[player.name] == room_name:
+                        player.socket.sendall(b'Actualmente estas en la sala: ' + room_name.encode())
+                        same_room = True
+                    else:
+                        old_room = self.room_player_map[player.name]
+                        self.rooms[old_room].remove_player(player)
+                if not same_room:
+                    if not room_name in self.rooms:
+                        new_room = Room(room_name)
+                        self.rooms[room_name] = new_room
+                    self.rooms[room_name].players.append(player)
+                    self.rooms[room_name].welcome_new(player)
+                    self.room_player_map[player.name] = room_name
+            else:
+                player.socket.sendall(instructions)
+
+        elif "<list>" in msg:
+            self.list_rooms(player)
+
+        elif "<manual>" in msg:
+            player.socket.sendall(instructions)
+
+        elif "<quit>" in msg:
+            player.socket.sendall(QUIT_STRING.encode())
+            self.remove_player(player)
+
+        else:
+            if player.name in self.room_player_map:
+                self.rooms[self.room_player_map[player.name]].broadcast(player, msg.encode())
+            else:
+                msg = 'Actualmente no estás en ninguna sala.\n' \
+                    + 'Usa [<list>] para ver las salas disponibles.\n' \
+                    + 'Usa [<join> room_name] para unirte a una sala.\n'
+                player.socket.sendall(msg.encode())
+
+    def remove_player(self, player):
+        if player.name in self.room_player_map:
+            self.rooms[self.room_player_map[player.name]].remove_player(player)
+            del self.room_player_map[player.name]
+        print("Jugador: " + player.name + " ha abandonado el chat\n")
+
+class Room:
+    def __init__(self, name):
+        self.players = []
+        self.name = name
+
+    def welcome_new(self, from_player):
+        msg = self.name + " da la bienvenida a: " + from_player.name + '\n'
+        for player in self.players:
+            player.socket.sendall(msg.encode())
+
+    def broadcast(self, from_player, msg):
+        msg = from_player.name.encode() + b":" + msg
+        for player in self.players:
+            player.socket.sendall(msg)
+
+    def remove_player(self, player):
+        self.players.remove(player)
+        leave_msg = player.name.encode() + b"ha abandonado la sala\n"
+        self.broadcast(player, leave_msg)
+
+class Player:
+    def __init__(self, socket, name="nuevo"):
+        socket.setblocking(0)
+        self.socket = socket
+        self.name = name
+
+    def fileno(self):
+        return self.socket.fileno()
 
 
-HOST, PORT = "localhost", 9888
-ChatHandler.lock = threading.Lock()
-server = socketserver.ThreadingTCPServer((HOST, PORT), ChatHandler)
-try:
+
+# class ChatHandler(socketserver.StreamRequestHandler):
+#     def handle(self):
+#         player = Player(self.request)
+#         hall.welcome_new(player)
+#         while True:
+#             read_sockets, _, _ = select.select([player.socket], [], [])
+#             for sock in read_sockets:
+#                 msg = sock.recv(4096)
+#                 if not msg:
+#                     player.socket.close()
+#                     return
+#                 msg = msg.decode().lower()
+#                 hall.handle_msg(player, msg)
+
+
+# hall = Hall()
+# server = socketserver.ThreadingTCPServer(('localhost', PORT), ChatHandler)
+# server.allow_reuse_address = True
+# print("Servidor escuchando en el puerto", PORT)
+# server.serve_forever()
+class ChatHandler(socketserver.StreamRequestHandler):
+    def handle(self):
+        player = Player(self.request)
+        hall.welcome_new(player)
+        while True:
+            read_sockets, _, _ = select.select([player.socket], [], [])
+            for sock in read_sockets:
+                msg = sock.recv(4096)
+                if not msg:
+                    player.socket.close()
+                    return
+                msg = msg.decode().lower()
+                hall.handle_msg(player, msg)
+
+hall = Hall()
+server = socketserver.ThreadingTCPServer(('localhost', PORT), ChatHandler)
+server.allow_reuse_address = True
+print("Servidor escuchando en el puerto", PORT)
+
+# Función para iniciar el servidor en un hilo aparte
+def start_server(server):
     server.serve_forever()
-finally:
+
+# Iniciar el servidor en un hilo aparte
+server_thread = threading.Thread(target=start_server, args=(server,))
+server_thread.daemon = True
+server_thread.start()
+
+# Esperar hasta que se presione Ctrl+C para detener el servidor
+try:
+    while True:
+        pass
+except KeyboardInterrupt:
+    server.shutdown()
     server.server_close()
+    print("Servidor detenido")
