@@ -2,6 +2,7 @@
 import socketserver
 import select
 import socket
+import threading
 
 
 MAX_CLIENTS = 30
@@ -9,14 +10,14 @@ PORT = 22223
 QUIT_STRING = '<$quit$>'
 
 
-def create_socket(address):
-    s = socket.socket(socket.AF_UNSPEC, socket.SOCK_STREAM)
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    s.setblocking(0)
-    s.bind(address)
-    s.listen(MAX_CLIENTS)
-    print("Servidor escuchando en ", address) 
-    return s
+# def create_socket(address):
+#     s = socket.socket(socket.AF_UNSPEC, socket.SOCK_STREAM)
+#     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+#     s.setblocking(0)
+#     s.bind(address)
+#     s.listen(MAX_CLIENTS)
+#     print("Servidor escuchando en ", address) 
+#     return s
 
 class Hall:
     def __init__(self):
@@ -130,6 +131,26 @@ class Player:
 
 
 
+# class ChatHandler(socketserver.StreamRequestHandler):
+#     def handle(self):
+#         player = Player(self.request)
+#         hall.welcome_new(player)
+#         while True:
+#             read_sockets, _, _ = select.select([player.socket], [], [])
+#             for sock in read_sockets:
+#                 msg = sock.recv(4096)
+#                 if not msg:
+#                     player.socket.close()
+#                     return
+#                 msg = msg.decode().lower()
+#                 hall.handle_msg(player, msg)
+
+
+# hall = Hall()
+# server = socketserver.ThreadingTCPServer(('localhost', PORT), ChatHandler)
+# server.allow_reuse_address = True
+# print("Servidor escuchando en el puerto", PORT)
+# server.serve_forever()
 class ChatHandler(socketserver.StreamRequestHandler):
     def handle(self):
         player = Player(self.request)
@@ -144,10 +165,25 @@ class ChatHandler(socketserver.StreamRequestHandler):
                 msg = msg.decode().lower()
                 hall.handle_msg(player, msg)
 
-
 hall = Hall()
 server = socketserver.ThreadingTCPServer(('localhost', PORT), ChatHandler)
 server.allow_reuse_address = True
 print("Servidor escuchando en el puerto", PORT)
-server.serve_forever()
 
+# Función para iniciar el servidor en un hilo aparte
+def start_server(server):
+    server.serve_forever()
+
+# Iniciar el servidor en un hilo aparte
+server_thread = threading.Thread(target=start_server, args=(server,))
+server_thread.daemon = True
+server_thread.start()
+
+# Esperar hasta que se presione Ctrl+C para detener el servidor
+try:
+    while True:
+        pass
+except KeyboardInterrupt:
+    server.shutdown()
+    server.server_close()
+    print("Servidor detenido")
