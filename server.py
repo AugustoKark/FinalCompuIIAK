@@ -3,13 +3,14 @@ import socketserver
 import select
 import socket
 
+
 MAX_CLIENTS = 30
 PORT = 22223
 QUIT_STRING = '<$quit$>'
 
 
 def create_socket(address):
-    s = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+    s = socket.socket(socket.AF_UNSPEC, socket.SOCK_STREAM)
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.setblocking(0)
     s.bind(address)
@@ -38,13 +39,6 @@ class Hall:
             player.socket.sendall(msg.encode())
 
     def handle_msg(self, player, msg):
-        # instructions = b'Instructions:\n'\
-        #     + b'[<list>] to list all rooms\n'\
-        #     + b'[<join> room_name] to join/create/switch to a room\n' \
-        #     + b'[<manual>] to show instructions\n' \
-        #     + b'[<quit>] to quit\n' \
-        #     + b'Otherwise start typing and enjoy!' \
-        #     + b'\n'
         instructions = b'Instrucciones:\n'\
             + b'[<list>] para listar todas las salas\n'\
             + b'[<join> room_name] para unirte/crear/cambiar a una sala\n' \
@@ -152,7 +146,7 @@ class ChatHandler(socketserver.StreamRequestHandler):
 
 
 hall = Hall()
-server = socketserver.ThreadingTCPServer(('::1', PORT), ChatHandler)
+server = socketserver.ThreadingTCPServer(('localhost', PORT), ChatHandler)
 server.allow_reuse_address = True
 print("Servidor escuchando en el puerto", PORT)
 server.serve_forever()
