@@ -1,10 +1,11 @@
 import socketserver
 import threading
+import os
 
 class ChatHandler(socketserver.BaseRequestHandler):
     clients = {}
-    lock = threading.Lock()
-    message_buffer = {}
+    client_states = {}
+    message_files = {}
 
     def handle(self):
         self.client_name = None
@@ -15,8 +16,9 @@ class ChatHandler(socketserver.BaseRequestHandler):
             if not self.client_name:
                 if self.data.startswith("Name:"):
                     self.client_name = self.data.split(":")[1]
-                    with self.lock:
-                        self.clients[self.client_name] = self.request
+                    with ChatHandler.lock:
+                        ChatHandler.clients[self.client_name] = self.request
+                        ChatHandler.client_states[self.client_name] = None
                     self.broadcast(f"{self.client_name} has joined the chat.")
                     self.send_online_users()
                 else:
@@ -24,19 +26,27 @@ class ChatHandler(socketserver.BaseRequestHandler):
             else:
                 if self.data == "quit":
                     self.request.close()
-                    with self.lock:
+                    with ChatHandler.lock:
                         del ChatHandler.clients[self.client_name]
+                        del ChatHandler.client_states[self.client_name]
                     self.broadcast(f"{self.client_name} has left the chat.")
                     self.send_online_users()
                     break
                 elif self.data.startswith("Chat with:"):
-                    self.current_chat_partner = self.data.split(":")[1]
-                    self.request.sendall(bytes(f"You are now chatting with {self.current_chat_partner}\n", "utf-8"))
-                    self.check_message_buffer()
+                    partner = self.data.split(":")[1].strip()
+                    if partner in ChatHandler.clients:
+                        self.current_chat_partner = partner
+                        ChatHandler.client_states[self.client_name] = f"Chatting with {partner}"
+                        self.request.sendall(bytes(f"You are now chatting with {partner}\n", "utf-8"))
+                        self.process_message_file()
+                    else:
+                        self.request.sendall(bytes(f"User {partner} is not online.\n", "utf-8"))
                 elif self.data == "End chat":
                     self.current_chat_partner = None
+                    ChatHandler.client_states[self.client_name] = None
                     self.request.sendall(bytes("You have ended the current chat\n", "utf-8"))
-                elif self.current_chat_partner:
+                    self.process_message_file()
+                elif ChatHandler.client_states[self.client_name] and self.current_chat_partner:
                     recipient_name = self.current_chat_partner
                     message = self.data
                     self.send_private_message(recipient_name.strip(), message.strip())
@@ -44,30 +54,42 @@ class ChatHandler(socketserver.BaseRequestHandler):
                     self.request.sendall(bytes("You are not currently in a chat. Use 'Chat with: username' to start a chat.\n", "utf-8"))
 
     def broadcast(self, message):
-        with self.lock:
-            for client_name, client_socket in self.clients.items():
-                client_socket.sendall(bytes(message + "\n", "utf-8"))
+        with ChatHandler.lock:
+            for client_name, client_socket in ChatHandler.clients.items():
+                if client_name != self.client_name:  # Evita enviar mensajes al cliente actual
+                    client_socket.sendall(bytes(message + "\n", "utf-8"))
 
     def send_online_users(self):
-        online_users = ", ".join(self.clients.keys())
-        with self.lock:
-            for client_name, client_socket in self.clients.items():
+        online_users = ", ".join(ChatHandler.clients.keys())
+        with ChatHandler.lock:
+            for client_name, client_socket in ChatHandler.clients.items():
                 client_socket.sendall(bytes(f"Online users: {online_users}\n", "utf-8"))
 
     def send_private_message(self, recipient_name, message):
-        if recipient_name in self.clients:
-            recipient_socket = self.clients[recipient_name]
+        if recipient_name in ChatHandler.clients:
+            recipient_socket = ChatHandler.clients[recipient_name]
             recipient_socket.sendall(bytes(f"[Private from {self.client_name}]: {message}\n", "utf-8"))
         else:
-            self.request.sendall(bytes(f"User {recipient_name} is not online.\n", "utf-8"))
+            self.store_message(recipient_name, f"[Private from {self.client_name}]: {message}")
 
-    def check_message_buffer(self):
-        if self.current_chat_partner in self.message_buffer:
-            for message in self.message_buffer[self.current_chat_partner]:
-                self.request.sendall(bytes(message + "\n", "utf-8"))
-            del self.message_buffer[self.current_chat_partner]
+    def store_message(self, recipient_name, message):
+        file_name = f"{recipient_name}_{self.client_name}.txt"
+        with open(file_name, "a") as f:
+            f.write(message + "\n")
 
-HOST, PORT = "localhost", 9989
+    def process_message_file(self):
+        if self.current_chat_partner:
+            file_name = f"{self.client_name}_{self.current_chat_partner}.txt"
+            if os.path.exists(file_name):
+                with open(file_name, "r") as f:
+                    messages = f.readlines()
+                for message in messages:
+                    self.request.sendall(bytes(message, "utf-8"))
+                os.remove(file_name)
+
+
+HOST, PORT = "localhost", 9888
+ChatHandler.lock = threading.Lock()
 server = socketserver.ThreadingTCPServer((HOST, PORT), ChatHandler)
 try:
     server.serve_forever()
