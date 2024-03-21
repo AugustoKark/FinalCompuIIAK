@@ -19,11 +19,33 @@ def parse_arguments():
 def prompt():
     print('>', end=' ', flush=True)
 
+def connect_to_server(ip, port):
+    try:
+        # Intenta conectar con IPv6
+        server_connection = socket.create_connection((ip, port), timeout=5)
+        return server_connection
+    except Exception as e:
+        print(f"Error al conectar con {ip}:{port} utilizando IPv6: {e}")
+        try:
+            # Si la conexión con IPv6 falla, intenta con IPv4
+            ip_v4 = socket.getaddrinfo(ip, port, family=socket.AF_INET)[0][4][0]
+            server_connection = socket.create_connection((ip_v4, port), timeout=5)
+            return server_connection
+        except Exception as e:
+            print(f"Error al conectar con {ip} utilizando IPv4: {e}")
+            return None
+
+    
+
 if __name__ == "__main__":
     args = parse_arguments()
-    server_connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_connection.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server_connection.connect((args.ip, args.port))
+    server_connection = connect_to_server(args.ip, args.port)
+    if server_connection is None:
+        print("No se pudo establecer una conexión con el servidor.")
+        sys.exit(1)
+    # server_connection = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+    # server_connection.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    # server_connection.connect((args.ip, args.port))
     print("Conectado al servidor\n")
 
     if args.name:
