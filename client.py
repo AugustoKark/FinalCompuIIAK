@@ -11,7 +11,7 @@ PORT=22223
 READ_BUFFER = 4096
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Chat client')
-    parser.add_argument('hostname', help='Hostname of the server')
+    parser.add_argument('-ip', '--ip', default='localhost', help='Hostname of the server')
     parser.add_argument('-p', '--port', type=int, default=PORT, help='Port of the server')
     parser.add_argument('-n', '--name', help='Your username')
     return parser.parse_args()
@@ -23,13 +23,12 @@ if __name__ == "__main__":
     args = parse_arguments()
     server_connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_connection.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    server_connection.connect((args.hostname, args.port))
+    server_connection.connect((args.ip, args.port))
     print("Conectado al servidor\n")
 
     if args.name:
         name = args.name
-        server_connection.sendall(("name: " + name).encode())
-        
+        server_connection.sendall(("name: " + name).encode())      
 
     
     msg_prefix = ''
@@ -51,8 +50,10 @@ while True:
                     sys.stdout.write('Bye\n')
                     sys.exit(2)
                 else:
-                    sys.stdout.write(msg.decode())
-                    if 'Please tell us your name' in msg.decode():
+                    if not (args.name and 'Por favor, ingresa tu nombre:' in msg.decode()):
+                        sys.stdout.write(msg.decode())
+                    
+                    if 'Por favor, ingresa tu nombre:' in msg.decode() and not args.name:
                         msg_prefix = 'name: ' 
                     else:
                         msg_prefix = ''

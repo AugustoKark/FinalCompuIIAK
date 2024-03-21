@@ -21,7 +21,8 @@ class Hall:
         self.room_player_map = {}
 
     def welcome_new(self, new_player):
-        new_player.socket.sendall(b'Bienvenido a la App de Mensajeria.\nPor favor, ingresa tu nombre:\n')
+        new_player.socket.sendall(b'Bienvenido a la App de Mensajeria.')
+        new_player.socket.sendall(b'Por favor, ingresa tu nombre:')
 
     def list_rooms(self, player):
         if len(self.rooms) == 0:
