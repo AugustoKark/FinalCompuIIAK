@@ -2,26 +2,41 @@
 import socket
 import sys
 import select
+import argparse
 
-from util import PORT
+
+PORT=22223
+
 
 READ_BUFFER = 4096
-
-if len(sys.argv) < 2:
-    print("Usage: Python3 client.py [hostname]", file=sys.stderr)
-    sys.exit(1)
-
-server_connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server_connection.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-server_connection.connect((sys.argv[1], PORT))
+def parse_arguments():
+    parser = argparse.ArgumentParser(description='Chat client')
+    parser.add_argument('hostname', help='Hostname of the server')
+    parser.add_argument('-p', '--port', type=int, default=PORT, help='Port of the server')
+    parser.add_argument('-n', '--name', help='Your username')
+    return parser.parse_args()
 
 def prompt():
     print('>', end=' ', flush=True)
 
-print("Connected to server\n")
-msg_prefix = ''
+if __name__ == "__main__":
+    args = parse_arguments()
+    server_connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_connection.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    server_connection.connect((args.hostname, args.port))
+    print("Conectado al servidor\n")
 
-socket_list = [sys.stdin, server_connection]
+    if args.name:
+        name = args.name
+        server_connection.sendall(("name: " + name).encode())
+        
+
+    
+    msg_prefix = ''
+
+    socket_list = [sys.stdin, server_connection]
+
+
 
 while True:
     read_sockets, _, _ = select.select(socket_list, [], [])
