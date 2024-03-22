@@ -6,7 +6,6 @@ import os
 MAX_CLIENTS = 30
 PORT = 22223
 QUIT_STRING = '<$quit$>'
-HISTORY_FILE = 'chat_history.txt'
 
 
 def create_socket(address):
@@ -34,10 +33,16 @@ class Hall:
                   + 'Usa [<join> room_name] to create a room.\n'
             player.socket.sendall(msg.encode())
         else:
+            # msg = 'Listando salas actuales...\n'
+            # for room in self.rooms:
+            #     msg += room + ": " + str(len(self.rooms[room].players)) + " jugador(es)\n"
+            # player.socket.sendall(msg.encode())
             msg = 'Listando salas actuales...\n'
-            for room in self.rooms:
-                msg += room + ": " + str(len(self.rooms[room].players)) + " jugador(es)\n"
+            for room_name, room in self.rooms.items():
+                players_in_room = ", ".join([player.name for player in room.players])
+                msg += f'{room_name}: {players_in_room}\n'
             player.socket.sendall(msg.encode())
+
 
     def handle_msg(self, player, msg):
         instructions = b'Instrucciones:\n' \
@@ -69,6 +74,8 @@ class Hall:
                     if not room_name in self.rooms:
                         new_room = Room(room_name)
                         self.rooms[room_name] = new_room
+                        # Crear historial de sala si no existe
+                        new_room.create_history_file()
                     self.rooms[room_name].players.append(player)
                     self.rooms[room_name].welcome_new(player)
                     self.room_player_map[player.name] = room_name
@@ -90,8 +97,9 @@ class Hall:
 
         else:
             if player.name in self.room_player_map:
-                self.rooms[self.room_player_map[player.name]].broadcast(player, msg.encode())
-                self.save_to_history(player.name, msg)  # Save message to history file
+                current_room = self.room_player_map[player.name]
+                self.rooms[current_room].broadcast(player, msg.encode())
+                self.rooms[current_room].save_to_history(player.name, msg)  # Save message to history file
             else:
                 msg = 'Actualmente no estás en ninguna sala.\n' \
                       + 'Usa [<list>] para ver las salas disponibles.\n' \
@@ -100,28 +108,24 @@ class Hall:
 
     def remove_player(self, player):
         if player.name in self.room_player_map:
-            self.rooms[self.room_player_map[player.name]].remove_player(player)
+            current_room = self.room_player_map[player.name]
+            self.rooms[current_room].remove_player(player)
             del self.room_player_map[player.name]
         print("Jugador: " + player.name + " ha abandonado el chat\n")
 
     def show_history(self, player):
-        if os.path.exists(HISTORY_FILE):
-            with open(HISTORY_FILE, 'r') as file:
-                history = file.read()
-                player.socket.sendall(history.encode())
+        if player.name in self.room_player_map:
+            current_room = self.room_player_map[player.name]
+            self.rooms[current_room].show_history(player)
         else:
-            player.socket.sendall(b'No hay historial de chat disponible.\n')
-
-    @staticmethod
-    def save_to_history(player_name, message):
-        with open(HISTORY_FILE, 'a') as file:
-            file.write(player_name + ": " + message + "\n")
+            player.socket.sendall('No estás en ninguna sala.\n'.encode())
 
 
 class Room:
     def __init__(self, name):
         self.players = []
         self.name = name
+        self.history_file = name + '_history.txt'
 
     def welcome_new(self, from_player):
         msg = self.name + " da la bienvenida a: " + from_player.name + '\n'
@@ -135,8 +139,24 @@ class Room:
 
     def remove_player(self, player):
         self.players.remove(player)
-        leave_msg = player.name.encode() + b"ha abandonado la sala\n"
+        leave_msg = player.name.encode() + b" ha abandonado la sala\n"
         self.broadcast(player, leave_msg)
+
+    def create_history_file(self):
+        with open(self.history_file, 'w'):
+            pass
+
+    def save_to_history(self, player_name, message):
+        with open(self.history_file, 'a') as file:
+            file.write(player_name + ": " + message + "\n")
+
+    def show_history(self, player):
+        if os.path.exists(self.history_file):
+            with open(self.history_file, 'r') as file:
+                history = file.read()
+                player.socket.sendall(history.encode())
+        else:
+            player.socket.sendall(b'No hay historial de chat disponible para esta sala.\n')
 
 
 class Player:
