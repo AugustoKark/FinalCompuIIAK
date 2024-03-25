@@ -1,4 +1,13 @@
+'''
+Agregar:
+        -Sala privada
+        -DB
+        -Lista de usuarios conectados para mandar mensajes privados
+        -contraseña en algunas salas
 
+
+
+'''
 import socket
 import sys
 import select
@@ -6,9 +15,9 @@ import argparse
 
 
 PORT=22223
-
-
 READ_BUFFER = 4096
+
+
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Chat client')
     parser.add_argument('-ip', '--ip', default='localhost', help='Hostname of the server')

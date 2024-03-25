@@ -87,6 +87,24 @@ class Hall:
 
         elif "<manual>" in msg:
             player.socket.sendall(instructions)
+        
+
+        # elif "<private>" in msg:
+        #     if len(msg.split()) >= 3:
+        #         # Obtener nombre del destinatario y mensaje
+        #         parts = msg.split(maxsplit=2)
+        #         recipient_name = parts[1]
+        #         private_msg = parts[2]
+
+        #         # Crear sala oculta si no existe
+        #         room_name = self.create_hidden_room(player.name, recipient_name)
+
+        #         # Enviar mensaje a la sala oculta
+        #         self.rooms[room_name].broadcast(player, f'[Private] {player.name}: {private_msg}'.encode())
+        #     else:
+        #         player.socket.sendall(b'Formato incorrecto. Uso: <private> nombre_destinatario mensaje\n')
+
+
 
         elif "<quit>" in msg:
             player.socket.sendall(QUIT_STRING.encode())
@@ -119,6 +137,17 @@ class Hall:
             self.rooms[current_room].show_history(player)
         else:
             player.socket.sendall('No estás en ninguna sala.\n'.encode())
+
+    # def create_hidden_room(self, user1, user2):
+    #     # Generar un nombre único para la sala oculta
+    #     room_name = f'private_{user1}_{user2}'
+
+    #     # Crear la sala oculta si no existe
+    #     if room_name not in self.rooms:
+    #         new_room = Room(room_name)
+    #         self.rooms[room_name] = new_room
+
+    #     return room_name
 
 
 class Room:
