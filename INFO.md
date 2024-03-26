@@ -1,6 +1,6 @@
 ## Informe de Diseño -
 
-Este documento proporciona una visión general de las decisiones principales de diseño tomadas durante el desarrollo de la Chat App, así como su justificación.
+Este documento proporciona una visión general de las decisiones principales de diseño tomadas durante el desarrollo de la app de mensajería, así como su justificación.
 Modelo de Datos
 
 El modelo de datos de la App se basa en tres entidades principales: Usuario, Sala y Mensaje.
@@ -14,7 +14,7 @@ Justificación
 Este modelo de datos se consideró adecuado debido a su simplicidad y su capacidad para manejar las características básicas de una aplicación de mensajería. Permite la identificación única de usuarios, la gestión de múltiples salas de chat y el seguimiento de los mensajes enviados.
 Almacenamiento de Datos
 
-La Chat App utiliza un enfoque de almacenamiento de datos basado en archivos para mantener el historial de chat de cada sala.
+La App utiliza un enfoque de almacenamiento de datos basado en archivos para mantener el historial de chat de cada sala.
 
     Cada sala de chat tiene su propio archivo de historial, donde se almacenan los mensajes anteriores.
     Los archivos de historial se guardan en el sistema de archivos del servidor.
@@ -24,7 +24,7 @@ Justificación
 Se optó por este enfoque de almacenamiento de datos debido a su simplicidad y eficiencia. Los archivos de historial proporcionan una forma sencilla de almacenar y recuperar mensajes anteriores sin la necesidad de configurar una base de datos completa. Además, al mantener los archivos de historial en el sistema de archivos del servidor, se evita la necesidad de utilizar recursos adicionales de almacenamiento externo.
 Multithreading
 
-La Chat App utiliza el módulo socketserver de Python para implementar un servidor TCP multi-hilo.
+La App utiliza el módulo socketserver de Python para implementar un servidor TCP multi-hilo.
 
     Cada conexión de cliente se maneja en un hilo separado.
     Esto permite que el servidor maneje múltiples clientes simultáneamente sin bloquear el hilo principal.

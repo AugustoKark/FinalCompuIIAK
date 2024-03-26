@@ -2,9 +2,9 @@
 
 - [ ] Agregar mejoras al servidor
     - [ ] Agregar la funcionalidad de salas privadas
+    - [ ] Agregar una contraseña a las salas
     - [ ] Agregar una BD
     - [ ] Agregar una lista de usuarios conectados
-    - [ ] Agregar una contraseña a las salas
 
 
 

@@ -2,6 +2,7 @@ import socketserver
 import select
 import socket
 import os
+import threading
 
 MAX_CLIENTS = 30
 PORT = 22223
@@ -33,10 +34,6 @@ class Hall:
                   + 'Usa [<join> room_name] to create a room.\n'
             player.socket.sendall(msg.encode())
         else:
-            # msg = 'Listando salas actuales...\n'
-            # for room in self.rooms:
-            #     msg += room + ": " + str(len(self.rooms[room].players)) + " jugador(es)\n"
-            # player.socket.sendall(msg.encode())
             msg = 'Listando salas actuales...\n'
             for room_name, room in self.rooms.items():
                 players_in_room = ", ".join([player.name for player in room.players])
@@ -89,23 +86,6 @@ class Hall:
             player.socket.sendall(instructions)
         
 
-        # elif "<private>" in msg:
-        #     if len(msg.split()) >= 3:
-        #         # Obtener nombre del destinatario y mensaje
-        #         parts = msg.split(maxsplit=2)
-        #         recipient_name = parts[1]
-        #         private_msg = parts[2]
-
-        #         # Crear sala oculta si no existe
-        #         room_name = self.create_hidden_room(player.name, recipient_name)
-
-        #         # Enviar mensaje a la sala oculta
-        #         self.rooms[room_name].broadcast(player, f'[Private] {player.name}: {private_msg}'.encode())
-        #     else:
-        #         player.socket.sendall(b'Formato incorrecto. Uso: <private> nombre_destinatario mensaje\n')
-
-
-
         elif "<quit>" in msg:
             player.socket.sendall(QUIT_STRING.encode())
             self.remove_player(player)
@@ -138,23 +118,13 @@ class Hall:
         else:
             player.socket.sendall('No estás en ninguna sala.\n'.encode())
 
-    # def create_hidden_room(self, user1, user2):
-    #     # Generar un nombre único para la sala oculta
-    #     room_name = f'private_{user1}_{user2}'
-
-    #     # Crear la sala oculta si no existe
-    #     if room_name not in self.rooms:
-    #         new_room = Room(room_name)
-    #         self.rooms[room_name] = new_room
-
-    #     return room_name
 
 
 class Room:
     def __init__(self, name):
         self.players = []
         self.name = name
-        self.history_file = name + '_history.txt'
+        self.history_file = os.path.join("chats", name + '_history.txt')
 
     def welcome_new(self, from_player):
         msg = self.name + " da la bienvenida a: " + from_player.name + '\n'
@@ -172,6 +142,8 @@ class Room:
         self.broadcast(player, leave_msg)
 
     def create_history_file(self):
+        if not os.path.exists("chats"):
+            os.makedirs("chats")
         with open(self.history_file, 'w'):
             pass
 
@@ -201,7 +173,9 @@ class Player:
 class ChatHandler(socketserver.StreamRequestHandler):
     def handle(self):
         player = Player(self.request)
+        print(f'Conexión establecida desde {self.client_address[0]} en el hilo {threading.current_thread().ident}')
         hall.welcome_new(player)
+        
         while True:
             read_sockets, _, _ = select.select([player.socket], [], [])
             for sock in read_sockets:
@@ -210,6 +184,7 @@ class ChatHandler(socketserver.StreamRequestHandler):
                     player.socket.close()
                     return
                 msg = msg.decode().lower()
+                print(threading.current_thread().ident)
                 hall.handle_msg(player, msg)
 
 
