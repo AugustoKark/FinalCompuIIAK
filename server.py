@@ -19,11 +19,7 @@ def create_socket(address):
     print("Servidor escuchando en ", address)
     return s
 
-class MyIPv4Server(socketserver.ThreadingTCPServer):
-    address_family = socket.AF_INET  # Configura el servidor para IPv4
 
-class MyIPv6Server(socketserver.ThreadingTCPServer):
-    address_family = socket.AF_INET6  # Configura el servidor para IPv6
 
 
 class Hall:
@@ -196,26 +192,40 @@ class ChatHandler(socketserver.StreamRequestHandler):
 
 
 hall = Hall()
-# server = socketserver.ThreadingTCPServer(('localhost', PORT), ChatHandler)
-# server.allow_reuse_address = True
-# print("Servidor escuchando en el puerto", PORT)
-# server.serve_forever()
 
-server_ipv4 = MyIPv4Server(('0.0.0.0', PORT_IPV4), ChatHandler)
-server_ipv4.allow_reuse_address = True
-print("Servidor IPv4 escuchando en el puerto", PORT_IPV4)
-# print("Identificador del hilo de IPv4:", threading.current_thread().ident)
-
-# Crear un servidor IPv6
-server_ipv6 = MyIPv6Server(('::', PORT_IPV6), ChatHandler)
-server_ipv6.allow_reuse_address = True
-print("Servidor IPv6 escuchando en el puerto", PORT_IPV6)
-# print("Identificador del hilo de IPv6:", threading.current_thread().ident)
-# Iniciar ambos servidores en hilos separados
-threading.Thread(target=server_ipv4.serve_forever).start()
+# server_ipv4 = MyIPv4Server(('0.0.0.0', PORT_IPV4), ChatHandler)
+# server_ipv4.allow_reuse_address = True
+# print("Servidor IPv4 escuchando en el puerto", PORT_IPV4)
 
 
-threading.Thread(target=server_ipv6.serve_forever).start()
+# server_ipv6 = MyIPv6Server(('::', PORT_IPV6), ChatHandler)
+# server_ipv6.allow_reuse_address = True
+# print("Servidor IPv6 escuchando en el puerto", PORT_IPV6)
+
+# threading.Thread(target=server_ipv4.serve_forever).start()
+# threading.Thread(target=server_ipv6.serve_forever).start()
 
 
+class MyIPv4Server(socketserver.ThreadingTCPServer):
+    address_family = socket.AF_INET  # Configura el servidor para IPv4
 
+class MyIPv6Server(socketserver.ThreadingTCPServer):
+    address_family = socket.AF_INET6  # Configura el servidor para IPv6
+
+def start_ipv4_server():
+    server_ipv4 = MyIPv4Server(('0.0.0.0', PORT_IPV4), ChatHandler)
+    server_ipv4.allow_reuse_address = True
+    print("Servidor IPv4 escuchando en el puerto", PORT_IPV4)
+    print("Identificador del hilo de IPv4:", threading.current_thread().ident)
+    server_ipv4.serve_forever()
+
+# Crear una función para iniciar el servidor IPv6
+def start_ipv6_server():
+    server_ipv6 = MyIPv6Server(('::', PORT_IPV6), ChatHandler)
+    server_ipv6.allow_reuse_address = True
+    print("Servidor IPv6 escuchando en el puerto", PORT_IPV6)
+    print("Identificador del hilo de IPv6:", threading.current_thread().ident)
+    server_ipv6.serve_forever()
+
+threading.Thread(target=start_ipv4_server).start()
+threading.Thread(target=start_ipv6_server).start()
