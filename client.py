@@ -32,7 +32,11 @@ def prompt():
 
 if __name__ == "__main__":
     args = parse_arguments()
-    server_connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    if args.ip == 'localhost' or args.ip == '0.0.0.0' or args.ip == '127.0.0.1':
+        server_connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    else:
+        server_connection = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
+    # server_connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server_connection.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server_connection.connect((args.ip, args.port))
     print("Conectado al servidor\n")
