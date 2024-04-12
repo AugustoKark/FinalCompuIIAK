@@ -3,10 +3,11 @@ import select
 import socket
 import os
 import threading
+import signal
 
 MAX_CLIENTS = 30
-PORT_IPV4 = 22223
-PORT_IPV6 = 22224
+PORT_IPV4 = 22220
+PORT_IPV6 = 22229
 QUIT_STRING = '<$quit$>'
 
 
@@ -26,6 +27,7 @@ class Hall:
     def __init__(self):
         self.rooms = {}
         self.room_user_map = {}
+        self.rooms_with_password = {}
 
     def create_room(self, user, room_name, password=None):
         if room_name in self.rooms:
@@ -37,6 +39,9 @@ class Hall:
             new_room.users.append(user)
             new_room.welcome_new(user)
             self.room_user_map[user.name] = room_name
+            if password:
+                self.rooms_with_password[room_name] = password
+                print("sala con contraseña creada", room_name)
             msg = 'Sala creada con éxito.\n'
             user.socket.sendall(msg.encode())
 
@@ -61,6 +66,7 @@ class Hall:
         instructions = b'Instrucciones:\n' \
                         + b'[<list>] para listar todas las salas\n' \
                         + b'[<join> room_name] para unirte/crear/cambiar a una sala\n' \
+                        + b'[<create> room_name password] para crear una sala con contrasenia\n' \
                         + b'[<history>] para ver el historial de chat\n' \
                         + b'[<manual>] para mostrar las instrucciones\n' \
                         + b'[<quit>] para salir\n'
@@ -73,9 +79,37 @@ class Hall:
             user.socket.sendall(instructions)
 
         elif "<join>" in msg:
+            try:
+                if len(msg.split()) >= 3:
+                    room_name = msg.split()[1]
+                    password = msg.split()[2]
+
+                    if room_name in self.rooms_with_password:
+                        if password != self.rooms_with_password[room_name]:
+                            user.socket.sendall(b'Password incorrecta. Intenta nuevamente.\n')
+                            return
+                        else:
+                            user.socket.sendall(b'Password correcta. Bienvenido a la sala.\n')
+                            self.rooms[room_name].users.append(user)
+                            self.rooms[room_name].welcome_new(user)
+                            self.room_user_map[user.name] = room_name
+                            return
+
+
+            except:
+                print("Error")
+
+
+            
             same_room = False
             if len(msg.split()) >= 2:
                 room_name = msg.split()[1]
+                if room_name in self.rooms_with_password:
+                    user.socket.sendall(b'Esta sala esta protegida por Password. Por favor, ingresa la Password de la siguiente forma:\n <join> room_name password\n')
+            
+                    
+                    
+
                 if user.name in self.room_user_map:
                     if self.room_user_map[user.name] == room_name:
                         user.socket.sendall(b'Actualmente estas en la sala: ' + room_name.encode())
@@ -83,7 +117,7 @@ class Hall:
                     else:
                         old_room = self.room_user_map[user.name]
                         self.rooms[old_room].remove_user(user)
-                if not same_room:
+                if not same_room and not room_name in self.rooms_with_password:
                     if not room_name in self.rooms:
                         new_room = Room(room_name)
                         self.rooms[room_name] = new_room
@@ -153,21 +187,7 @@ class Room:
         self.password = password
 
     def welcome_new(self, from_user):
-        if self.password:
-            msg = 'Esta sala está protegida por contraseña. Por favor, ingresa la contraseña:\n'
-            from_user.socket.sendall(msg.encode())
-            try:
-                password_attempt = from_user.socket.recv(4096).decode().strip()
-                print(password_attempt,"holaaaa ")
-            except BlockingIOError:
-                print("BlockingIOError")
-                # Handle the exception appropriately
-                return False
-
-            if password_attempt != self.password:
-                msg1 = 'Contraseña incorrecta. Saliendo de la sala.\n'
-                from_user.socket.sendall(msg1.encode())
-                return False
+   
         msg = self.name + " da la bienvenida a: " + from_user.name + '\n'
         for user in self.users:
             user.socket.sendall(msg.encode())
@@ -238,6 +258,8 @@ class MyIPv4Server(socketserver.ThreadingTCPServer):
 class MyIPv6Server(socketserver.ThreadingTCPServer):
     address_family = socket.AF_INET6  # Configura el servidor para IPv6
 
+
+
 def start_ipv4_server():
     server_ipv4 = MyIPv4Server(('0.0.0.0', PORT_IPV4), ChatHandler)
     server_ipv4.allow_reuse_address = True
@@ -255,3 +277,5 @@ def start_ipv6_server():
 
 threading.Thread(target=start_ipv4_server).start()
 threading.Thread(target=start_ipv6_server).start()
+
+
