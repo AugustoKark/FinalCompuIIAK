@@ -27,6 +27,19 @@ class Hall:
         self.rooms = {}
         self.room_user_map = {}
 
+    def create_room(self, user, room_name, password=None):
+        if room_name in self.rooms:
+            user.socket.sendall(b'Ya existe una sala con ese nombre.\n')
+        else:
+            new_room = Room(room_name, password)
+            self.rooms[room_name] = new_room
+            new_room.create_history_file()
+            new_room.users.append(user)
+            new_room.welcome_new(user)
+            self.room_user_map[user.name] = room_name
+            msg = 'Sala creada con éxito.\n'
+            user.socket.sendall(msg.encode())
+
     def welcome_new(self, new_user):
         new_user.socket.sendall(b'Bienvenido a la App de Mensajeria.')
         new_user.socket.sendall(b'Por favor, ingresa tu nombre:')
@@ -87,6 +100,15 @@ class Hall:
 
         elif "<manual>" in msg:
             user.socket.sendall(instructions)
+
+        elif "<create>" in msg:
+            if len(msg.split()) >= 3:
+                room_name = msg.split()[1]
+                password = msg.split()[2]
+                self.create_room(user, room_name, password)
+            else:
+                user.socket.sendall(b'Uso incorrecto del comando create. Ejemplo: <create> room_name password\n')
+
         
 
         elif "<quit>" in msg:
@@ -124,15 +146,32 @@ class Hall:
 
 
 class Room:
-    def __init__(self, name):
+    def __init__(self, name, password=None):
         self.users = []
         self.name = name
         self.history_file = os.path.join("chats", name + '_history.txt')
+        self.password = password
 
     def welcome_new(self, from_user):
+        if self.password:
+            msg = 'Esta sala está protegida por contraseña. Por favor, ingresa la contraseña:\n'
+            from_user.socket.sendall(msg.encode())
+            try:
+                password_attempt = from_user.socket.recv(4096).decode().strip()
+                print(password_attempt,"holaaaa ")
+            except BlockingIOError:
+                print("BlockingIOError")
+                # Handle the exception appropriately
+                return False
+
+            if password_attempt != self.password:
+                msg1 = 'Contraseña incorrecta. Saliendo de la sala.\n'
+                from_user.socket.sendall(msg1.encode())
+                return False
         msg = self.name + " da la bienvenida a: " + from_user.name + '\n'
         for user in self.users:
             user.socket.sendall(msg.encode())
+        return True
 
     def broadcast(self, from_user, msg):
         msg = from_user.name.encode() + b":" + msg
@@ -192,19 +231,6 @@ class ChatHandler(socketserver.StreamRequestHandler):
 
 
 hall = Hall()
-
-# server_ipv4 = MyIPv4Server(('0.0.0.0', PORT_IPV4), ChatHandler)
-# server_ipv4.allow_reuse_address = True
-# print("Servidor IPv4 escuchando en el puerto", PORT_IPV4)
-
-
-# server_ipv6 = MyIPv6Server(('::', PORT_IPV6), ChatHandler)
-# server_ipv6.allow_reuse_address = True
-# print("Servidor IPv6 escuchando en el puerto", PORT_IPV6)
-
-# threading.Thread(target=server_ipv4.serve_forever).start()
-# threading.Thread(target=server_ipv6.serve_forever).start()
-
 
 class MyIPv4Server(socketserver.ThreadingTCPServer):
     address_family = socket.AF_INET  # Configura el servidor para IPv4
