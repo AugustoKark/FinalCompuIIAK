@@ -65,6 +65,7 @@ class Hall:
                         + b'[<join> room_name] para unirte/crear/cambiar a una sala\n' \
                         + b'[<private> room_name password] para crear una sala con contrasenia\n' \
                         + b'[<history>] para ver el historial de chat\n' \
+                        + b'[<private_msg>] para enviar un mensaje privado\n' \
                         + b'[<manual>] para mostrar las instrucciones\n' \
                         + b'[<quit>] para salir\n'
 
@@ -136,7 +137,20 @@ class Hall:
 
             else:
                 user.socket.sendall(b'Uso incorrecto del comando create. Ejemplo: <create> room_name password\n')
-
+        elif "<private_msg>" in msg:
+            if len(msg.split()) >= 3:
+                recipient_name = msg.split()[1]
+                message = ' '.join(msg.split()[2:])
+                if recipient_name in self.room_user_map:
+                    recipient_room = self.room_user_map[recipient_name]
+                    recipient = [u for u in self.rooms[recipient_room].users if u.name == recipient_name][0]
+                    msg = f'Private "{message}" from "{user.name}"'
+                    recipient.socket.sendall(msg.encode())
+                else:
+                    user.socket.sendall(b'El destinatario no existe.\n')
+            else:
+                user.socket.sendall(b'Uso incorrecto del comando private_msg. Ejemplo: <private_msg> destinatario message\n')
+                
         elif "<quit>" in msg:
             user.socket.sendall(QUIT_STRING.encode())
             self.remove_user(user)
