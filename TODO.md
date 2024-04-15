@@ -1,11 +1,12 @@
 # Tareas a realizar
 
 - [ ] Agregar mejoras al servidor
-    - [ ] Agregar la funcionalidad de salas privadas
-    - [ ] Agregar una contraseña a las salas
-    - [ ] Agregar una BD
-    - [ ] Agregar una lista de usuarios conectados
     - [ ] Agregar IPv4 e IPv6
+    - [ ] Agregar la funcionalidad de salas privadas. Agregar contraseña
+    - [ ] Agregar una BD
+    - [ ] Agregar autenticación de usuarios ??
+
+
 
 
 
