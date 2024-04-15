@@ -49,7 +49,12 @@ class Hall:
         else:
             msg = 'Listando salas actuales...\n'
             for room_name, room in self.rooms.items():
-                users_in_room = ", ".join([user.name for user in room.users])
+                if room_name in self.rooms_with_password:
+                    room_name = '(privated) ' + room_name
+                    users_in_room = ''
+                else:
+                    room_name = '(public) ' + room_name
+                    users_in_room = ", ".join([user.name for user in room.users])
                 msg += f'{room_name}: {users_in_room}\n'
             user.socket.sendall(msg.encode())
 
@@ -86,21 +91,14 @@ class Hall:
                             self.rooms[room_name].welcome_new(user)
                             self.room_user_map[user.name] = room_name
                             return
-
-
             except:
                 print("Error")
 
-
-            
             same_room = False
             if len(msg.split()) >= 2:
                 room_name = msg.split()[1]
                 if room_name in self.rooms_with_password:
                     user.socket.sendall(b'Esta sala esta protegida por Password. Por favor, ingresa la Password de la siguiente forma:\n <join> room_name password\n')
-            
-                    
-                    
 
                 if user.name in self.room_user_map:
                     if self.room_user_map[user.name] == room_name:
@@ -131,11 +129,13 @@ class Hall:
             if len(msg.split()) >= 3:
                 room_name = msg.split()[1]
                 password = msg.split()[2]
+                if user.name in self.room_user_map:
+                    current_room = self.room_user_map[user.name]
+                    self.rooms[current_room].remove_user(user)
                 self.create_room(user, room_name, password)
+
             else:
                 user.socket.sendall(b'Uso incorrecto del comando create. Ejemplo: <create> room_name password\n')
-
-        
 
         elif "<quit>" in msg:
             user.socket.sendall(QUIT_STRING.encode())
