@@ -3,7 +3,7 @@ import select
 import socket
 import os
 import threading
-import signal
+
 
 MAX_CLIENTS = 30
 PORT_IPV4 = 22220
@@ -11,14 +11,6 @@ PORT_IPV6 = 22229
 QUIT_STRING = '<$quit$>'
 
 
-def create_socket(address):
-    s = socket.socket(socket.AF_UNSPEC, socket.SOCK_STREAM)
-    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-    s.setblocking(0)
-    s.bind(address)
-    s.listen(MAX_CLIENTS)
-    print("Servidor escuchando en ", address)
-    return s
 
 
 
@@ -66,7 +58,7 @@ class Hall:
         instructions = b'Instrucciones:\n' \
                         + b'[<list>] para listar todas las salas\n' \
                         + b'[<join> room_name] para unirte/crear/cambiar a una sala\n' \
-                        + b'[<create> room_name password] para crear una sala con contrasenia\n' \
+                        + b'[<private> room_name password] para crear una sala con contrasenia\n' \
                         + b'[<history>] para ver el historial de chat\n' \
                         + b'[<manual>] para mostrar las instrucciones\n' \
                         + b'[<quit>] para salir\n'
@@ -135,7 +127,7 @@ class Hall:
         elif "<manual>" in msg:
             user.socket.sendall(instructions)
 
-        elif "<create>" in msg:
+        elif "<private>" in msg:
             if len(msg.split()) >= 3:
                 room_name = msg.split()[1]
                 password = msg.split()[2]
