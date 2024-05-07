@@ -49,7 +49,10 @@ class MyIPv4Server(socketserver.ThreadingTCPServer):
 
     def server_bind(self):
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        print(threading.current_thread().ident)
         super().server_bind()
+
+
 
 class MyIPv6Server(socketserver.ThreadingTCPServer):
     address_family = socket.AF_INET6  # Configura el servidor para IPv6
@@ -59,12 +62,15 @@ class MyIPv6Server(socketserver.ThreadingTCPServer):
 
     def server_bind(self):
         self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        print(threading.current_thread().ident)
+
         super().server_bind()
 
 def start_server(host, port, family, ServerClass):
     server = ServerClass((host, port), ChatHandler)
     print(f"Server started on [{host}]:{port}")
     threading.Thread(target=server.serve_forever).start()
+    print(threading.current_thread().ident)
 
 # Obtén todas las direcciones IPv4 e IPv6 disponibles
 addr_info = socket.getaddrinfo(None, PORT_IPV6, socket.AF_UNSPEC,
@@ -76,9 +82,11 @@ for family, _, _, _, sockaddr in addr_info:
     ServerClass = MyIPv4Server if family == socket.AF_INET else MyIPv6Server
     try:
         start_server(host, port, family, ServerClass)
-        print(threading.current_thread().ident)
+     
     except socket.error as e:
         print(f"Error al iniciar el servidor en [{host}]:{port} - {e}")
+
+
 
 
 # ---------------------------------------------------------------------------
