@@ -1,17 +1,8 @@
-'''
-Agregar:
-        -Sala privada
-        -DB
-        -Lista de usuarios conectados para mandar mensajes privados
-        -contraseña en algunas salas
-
-
-
-'''
 import socket
 import sys
 import select
 import argparse
+
 
 
 PORT=22223
