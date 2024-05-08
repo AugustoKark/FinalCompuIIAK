@@ -1,17 +1,8 @@
-'''
-Agregar:
-        -Sala privada
-        -DB
-        -Lista de usuarios conectados para mandar mensajes privados
-        -contraseña en algunas salas
-
-
-
-'''
 import socket
 import sys
 import select
 import argparse
+
 
 
 PORT=22223
@@ -32,11 +23,13 @@ def prompt():
 
 if __name__ == "__main__":
     args = parse_arguments()
-    if args.ip == 'localhost' or args.ip == '0.0.0.0' or args.ip == '127.0.0.1':
+    # '192.168.54.12'
+    if '.' in args.ip:
         server_connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        print("IPv4")
     else:
         server_connection = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
-    # server_connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
     server_connection.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     server_connection.connect((args.ip, args.port))
     print("Conectado al servidor\n")
