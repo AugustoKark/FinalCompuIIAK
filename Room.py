@@ -14,7 +14,9 @@ class Room:
         msg = self.name + " da la bienvenida a: " + from_user.name + '\n'
         
         for user in self.users:
-            user.socket.sendall(msg.encode())
+            if user.socket.fileno() != -1:
+                user.socket.sendall(msg.encode())
+            # user.socket.sendall(msg.encode())
         return True
 
     def broadcast(self, from_user, msg):
