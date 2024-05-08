@@ -8,9 +8,6 @@
 
 
 
-
-
-
 - [ ] Hacer los markdowns
   - [ ] Hacer el INSTALL.md
   - [ ] Hacer el README.md

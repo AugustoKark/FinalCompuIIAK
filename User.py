@@ -1,5 +1,4 @@
 
-
 class User:
     def __init__(self, socket, name="nuevo"):
         socket.setblocking(0)

@@ -46,3 +46,4 @@ class Room:
         else:
             user.socket.sendall(b'No hay historial de chat disponible para esta sala.\n')
 
+

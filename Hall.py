@@ -176,3 +176,4 @@ class Hall:
         else:
             user.socket.sendall('No estás en ninguna sala.\n'.encode())
 
+

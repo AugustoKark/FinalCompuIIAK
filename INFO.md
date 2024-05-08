@@ -32,3 +32,4 @@ La App utiliza el módulo socketserver de Python para implementar un servidor TC
 Justificación
 
 El uso de un servidor multi-hilo permite una mayor escalabilidad y capacidad de respuesta en la aplicación. Permite que múltiples usuarios se conecten y se comuniquen simultáneamente sin afectar negativamente al rendimiento del servidor. Además, simplifica la lógica de programación al separar la gestión de cada conexión de cliente en hilos independientes.
+

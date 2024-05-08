@@ -7,3 +7,4 @@ COPY User.py /app
 
 EXPOSE 22228
 ENTRYPOINT ["python", "server.py"]
+
