@@ -79,6 +79,7 @@ print(addr_info)
 
 for family, _, _, _, sockaddr in addr_info:
     host, port = sockaddr[:2]
+    host = '::' if family == socket.AF_INET6 else '0.0.0.0' # Esto es para que escuche en todas las interfaces el CONTENEDOR
     ServerClass = MyIPv4Server if family == socket.AF_INET else MyIPv6Server
     try:
         start_server(host, port, family, ServerClass)

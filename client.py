@@ -43,28 +43,31 @@ if __name__ == "__main__":
     socket_list = [sys.stdin, server_connection]
 
 
-
-while True:
-    read_sockets, _, _ = select.select(socket_list, [], [])
-    for s in read_sockets:
-        if s is server_connection: 
-            msg = s.recv(READ_BUFFER)
-            if not msg:
-                print("Server down!")
-                sys.exit(2)
-            else:
-                if msg == b'<$quit$>':
-                    sys.stdout.write('Bye\n')
+try:
+    while True:
+        read_sockets, _, _ = select.select(socket_list, [], [])
+        for s in read_sockets:
+            if s is server_connection: 
+                msg = s.recv(READ_BUFFER)
+                if not msg:
+                    print("Server down!")
                     sys.exit(2)
                 else:
-                    if not (args.name and 'Por favor, ingresa tu nombre:' in msg.decode()):
-                        sys.stdout.write(msg.decode())
-                    
-                    if 'Por favor, ingresa tu nombre:' in msg.decode() and not args.name:
-                        msg_prefix = 'name: ' 
+                    if msg == b'<$quit$>':
+                        sys.stdout.write('Bye\n')
+                        sys.exit(2)
                     else:
-                        msg_prefix = ''
-                    prompt()
-        else:
-            msg = msg_prefix + sys.stdin.readline()
-            server_connection.sendall(msg.encode())
+                        if not (args.name and 'Por favor, ingresa tu nombre:' in msg.decode()):
+                            sys.stdout.write(msg.decode())
+                        
+                        if 'Por favor, ingresa tu nombre:' in msg.decode() and not args.name:
+                            msg_prefix = 'name: ' 
+                        else:
+                            msg_prefix = ''
+                        prompt()
+            else:
+                msg = msg_prefix + sys.stdin.readline()
+                server_connection.sendall(msg.encode())
+except KeyboardInterrupt:
+            
+    sys.exit(2)

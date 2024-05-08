@@ -19,13 +19,16 @@ class Room:
 
     def broadcast(self, from_user, msg):
         msg = from_user.name.encode() + b":" + msg
+
         for user in self.users:
-            user.socket.sendall(msg)
+            if user.socket.fileno() != -1:
+                user.socket.sendall(msg)
 
     def remove_user(self, user):
-        self.users.remove(user)
-        leave_msg = user.name.encode() + b" ha abandonado la sala\n"
-        self.broadcast(user, leave_msg)
+        if user in self.users:
+            self.users.remove(user)
+            leave_msg = user.name.encode() + b" ha abandonado la sala\n"
+            self.broadcast(user, leave_msg)
 
     def create_history_file(self):
         if not os.path.exists("chats"):
