@@ -68,6 +68,9 @@ try:
             else:
                 msg = msg_prefix + sys.stdin.readline()
                 server_connection.sendall(msg.encode())
-except KeyboardInterrupt:
-            
+except Exception:
+    print("Server down!")
+    quit_msg = '<$quit$>'
+    server_connection.sendall(quit_msg.encode())
+    sys.stdout.write('Bye\n')
     sys.exit(2)

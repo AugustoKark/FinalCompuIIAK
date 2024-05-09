@@ -10,23 +10,24 @@ class Hall:
         self.rooms = {}
         self.room_user_map = {}
         self.rooms_with_password = {}
+    
        
 
     def create_room(self, user, room_name, password=None):
-        if room_name in self.rooms:
-            user.socket.sendall(b'Ya existe una sala con ese nombre.\n')
-        else:
-            new_room = Room(room_name, password)
-            self.rooms[room_name] = new_room
-            new_room.create_history_file()
-            new_room.users.append(user)
-            new_room.welcome_new(user)
-            self.room_user_map[user.name] = room_name
-            if password:
-                self.rooms_with_password[room_name] = password
-                print("sala con contraseña creada", room_name)
-            msg = 'Sala creada con éxito.\n'
-            user.socket.sendall(msg.encode())
+            if room_name in self.rooms:
+                user.socket.sendall(b'Ya existe una sala con ese nombre.\n')
+            else:
+                new_room = Room(room_name, password)
+                self.rooms[room_name] = new_room
+                new_room.create_history_file()
+                new_room.users.append(user)
+                new_room.welcome_new(user)
+                self.room_user_map[user.name] = room_name
+                if password:
+                    self.rooms_with_password[room_name] = password
+                    print("sala con contraseña creada", room_name)
+                msg = 'Sala creada con éxito.\n'
+                user.socket.sendall(msg.encode())
 
     def welcome_new(self, new_user):
            
@@ -55,7 +56,7 @@ class Hall:
             instructions = b'Instrucciones:\n' \
                             + b'[<list>] para listar todas las salas\n' \
                             + b'[<join> room_name] para unirte/crear/cambiar a una sala\n' \
-                            + b'[<private> room_name password] para crear una sala con contrasenia\n' \
+                            + b'[<private> room_name password] para crear una sala con password\n' \
                             + b'[<history>] para ver el historial de chat\n' \
                             + b'[<private_msg>] para enviar un mensaje privado\n' \
                             + b'[<manual>] para mostrar las instrucciones\n' \
@@ -162,12 +163,12 @@ class Hall:
                             + 'Usa [<join> room_name] para unirte a una sala.\n'
                     user.socket.sendall(msg.encode())
 
-    def remove_user(self, user):
-        if user.name in self.room_user_map:
-            current_room = self.room_user_map[user.name]
-            self.rooms[current_room].remove_user(user)
-            del self.room_user_map[user.name]
-        print("Usuario: " + user.name + " ha abandonado el chat\n")
+    def remove_user(self, user):   
+            if user.name in self.room_user_map:
+                current_room = self.room_user_map[user.name]
+                self.rooms[current_room].remove_user(user)
+                del self.room_user_map[user.name]
+            print("Usuario: " + user.name + " ha abandonado el chat \n")
 
     def show_history(self, user):
         if user.name in self.room_user_map:

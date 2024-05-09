@@ -10,7 +10,6 @@ class Room:
         self.history_lock = threading.Lock()
 
     def welcome_new(self, from_user):
-   
         msg = self.name + " da la bienvenida a: " + from_user.name + '\n'
         
         for user in self.users:
@@ -27,10 +26,10 @@ class Room:
                 user.socket.sendall(msg)
 
     def remove_user(self, user):
-        if user in self.users:
-            self.users.remove(user)
-            leave_msg = user.name.encode() + b" ha abandonado la sala\n"
-            self.broadcast(user, leave_msg)
+            if user in self.users:
+                self.users.remove(user)
+                leave_msg = user.name.encode() + b" ha abandonado la sala\n"
+                self.broadcast(user, leave_msg)
 
     def create_history_file(self):
         if not os.path.exists("chats"):
