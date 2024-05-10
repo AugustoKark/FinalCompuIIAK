@@ -148,6 +148,7 @@ class Hall:
             elif "<quit>" in msg:
                 user.socket.sendall(QUIT_STRING.encode())
                 self.remove_user(user)
+                user.socket.close()
 
             elif "<history>" in msg:
                 self.show_history(user)
