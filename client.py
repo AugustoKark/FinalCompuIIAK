@@ -5,13 +5,13 @@ import argparse
 
 
 
-PORT=22223
+PORT=22229
 READ_BUFFER = 4096
 
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Chat client')
-    parser.add_argument('-ip', '--ip', default='localhost', help='Hostname of the server')
+    parser.add_argument('-ip', '--ip', default='192.168.3.160', help='Hostname of the server')
     parser.add_argument('-p', '--port', type=int, default=PORT, help='Port of the server')
     parser.add_argument('-n', '--name', help='Your username')
     return parser.parse_args()
@@ -26,7 +26,6 @@ if __name__ == "__main__":
     # '192.168.54.12'
     if '.' in args.ip:
         server_connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        print("IPv4")
     else:
         server_connection = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
 
