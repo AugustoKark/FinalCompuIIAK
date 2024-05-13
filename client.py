@@ -5,13 +5,13 @@ import argparse
 
 
 
-PORT=22223
+PORT=22229
 READ_BUFFER = 4096
 
 
 def parse_arguments():
     parser = argparse.ArgumentParser(description='Chat client')
-    parser.add_argument('-ip', '--ip', default='localhost', help='Hostname of the server')
+    parser.add_argument('-ip', '--ip', default='192.168.3.160', help='Hostname of the server')
     parser.add_argument('-p', '--port', type=int, default=PORT, help='Port of the server')
     parser.add_argument('-n', '--name', help='Your username')
     return parser.parse_args()
@@ -26,7 +26,6 @@ if __name__ == "__main__":
     # '192.168.54.12'
     if '.' in args.ip:
         server_connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        print("IPv4")
     else:
         server_connection = socket.socket(socket.AF_INET6, socket.SOCK_STREAM)
 
@@ -43,29 +42,34 @@ if __name__ == "__main__":
     socket_list = [sys.stdin, server_connection]
 
 
-
-while True:
-    read_sockets, _, _ = select.select(socket_list, [], [])
-    for s in read_sockets:
-        if s is server_connection: 
-            msg = s.recv(READ_BUFFER)
-            if not msg:
-                print("Server down!")
-                sys.exit(2)
-            else:
-                if msg == b'<$quit$>':
-                    sys.stdout.write('Bye\n')
+try:
+    while True:
+        read_sockets, _, _ = select.select(socket_list, [], [])
+        for s in read_sockets:
+            if s is server_connection: 
+                msg = s.recv(READ_BUFFER)
+                if not msg:
+                    print("Server down!")
                     sys.exit(2)
                 else:
-                    if not (args.name and 'Por favor, ingresa tu nombre:' in msg.decode()):
-                        sys.stdout.write(msg.decode())
-                    
-                    if 'Por favor, ingresa tu nombre:' in msg.decode() and not args.name:
-                        msg_prefix = 'name: ' 
+                    if msg == b'<$quit$>':
+                        sys.stdout.write('Bye\n')
+                        sys.exit(2)
                     else:
-                        msg_prefix = ''
-                    prompt()
-        else:
-            msg = msg_prefix + sys.stdin.readline()
-            server_connection.sendall(msg.encode())
-
+                        if not (args.name and 'Por favor, ingresa tu nombre:' in msg.decode()):
+                            sys.stdout.write(msg.decode())
+                        
+                        if 'Por favor, ingresa tu nombre:' in msg.decode() and not args.name:
+                            msg_prefix = 'name: ' 
+                        else:
+                            msg_prefix = ''
+                        prompt()
+            else:
+                msg = msg_prefix + sys.stdin.readline()
+                server_connection.sendall(msg.encode())
+except Exception:
+    print("Server down!")
+    quit_msg = '<$quit$>'
+    server_connection.sendall(quit_msg.encode())
+    sys.stdout.write('Bye\n')
+    sys.exit(2)
