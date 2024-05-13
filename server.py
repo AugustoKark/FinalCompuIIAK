@@ -21,6 +21,9 @@ class ChatHandler(socketserver.StreamRequestHandler):
             # print(read_sockets)
             for sock in read_sockets:
                 print(sock)
+                if '[closed]' in str(sock):  # Comprueba si el socket está cerrado
+                    print(f'Conexión cerrada')
+                    return
                 msg = sock.recv(4096)
                 if not msg:
                     user.socket.close()
@@ -28,9 +31,7 @@ class ChatHandler(socketserver.StreamRequestHandler):
                 msg = msg.decode().lower()
                 print(threading.current_thread().ident)
                 hall.handle_msg(user, msg)
-                if user.socket.fileno() == -1:
-                    print(f'Conexión cerrada')
-                    return
+                
 
 
 hall = Hall()
