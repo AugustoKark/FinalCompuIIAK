@@ -18,6 +18,7 @@ class ChatHandler(socketserver.StreamRequestHandler):
         
         while True:
             read_sockets, _, _ = select.select([user.socket], [], [])
+            print(read_sockets)
             for sock in read_sockets:
                 msg = sock.recv(4096)
                 if not msg:
@@ -26,6 +27,8 @@ class ChatHandler(socketserver.StreamRequestHandler):
                 msg = msg.decode().lower()
                 print(threading.current_thread().ident)
                 hall.handle_msg(user, msg)
+                if not user.socket:
+                    return
 
 
 hall = Hall()
@@ -54,12 +57,12 @@ for family, _, _, _, sockaddr in addr_info:
     host, port = sockaddr[:2]
     ServerClass = MyIPv4Server if family == socket.AF_INET else MyIPv6Server
     try:
-        # if family == socket.AF_INET:
-        #     host = '0.0.0.0'  # Escucha en todas las interfaces IPv4
-        #     port = PORT_IPV4
-        # else:
-        #     host = '::'  # Escucha en todas las interfaces IPv6
-        #     port = PORT_IPV6
+        if family == socket.AF_INET:
+            host = '0.0.0.0'  # Escucha en todas las interfaces IPv4
+            port = PORT_IPV4
+        else:
+            host = '::'  # Escucha en todas las interfaces IPv6
+            port = PORT_IPV6
         start_server(host, port, family, ServerClass)
     except socket.error as e:
         print(f"Error al iniciar el servidor en [{host}]:{port} - {e}")
