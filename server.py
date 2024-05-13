@@ -28,6 +28,7 @@ class ChatHandler(socketserver.StreamRequestHandler):
                 print(threading.current_thread().ident)
                 hall.handle_msg(user, msg)
                 if not user.socket:
+                    print(f'Conexión cerrada')
                     return
 
 
